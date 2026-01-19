@@ -1,18 +1,20 @@
 ## UnitDB
 
-A lightweight, **in-memory JSON database** for Node.js designed for speed and simplicity. Intended for **single-process environments only**. Clustered or multi-process usage is not supported.
+A lightweight, **in-memory JSON database** for Node.js designed for speed and simplicity. Intended for **single-process environments only**.
 
-`unitdb` keeps all data in memory and does not persist data.
+`unitdb` keeps all data strictly in memory. There is **no persistence**.
 
 ---
 
 ### Features
 
 * **Mongo-style Queries:** `$gt`, `$lt`, `$gte`, `$lte`, `$ne`, `$in`, `$nin`, `$regex`
-* **In-memory Authority:** All reads operate on in-memory data
+* **In-memory Only:** All reads and writes operate on live memory
 * **Date Support:** Automatic normalization and comparison of `Date` values
+* **Sorting:** Multi-key ascending / descending sort
 * **Pagination:** Built-in `limit` and `skip`
 * **Minimal API:** Only `get()` and `set()`
+* **Synchronous Writes:** `set()` is fully synchronous
 
 ---
 
@@ -29,19 +31,13 @@ npm i unitdb
 ```js
 var unitdb = require('unitdb')
 
-// Single database / collection
-var db = unitdb('./unitdb.json')
+// Single in-memory collection
+var db = unitdb()
+
+db.set({ type: 'user', name: 'Alice' })
+db.set({ type: 'user', name: 'Bob' })
 
 var users = db.get({ type: 'user' })
-
-// Multiple logical tables
-var db = {
-  users: unitdb('./users.json'),
-  projects: unitdb('./projects.json'),
-}
-
-var users = db.users.get({})
-var projects = db.projects.get({})
 ```
 
 ---
@@ -66,7 +62,7 @@ db.set({
 #### 2. Querying with Operators
 
 ```js
-// Find high priority tasks
+// Numeric and inequality operators
 var tasks = db.get({
   priority: { $gte: 5 },
   status: { $ne: 'archived' }
@@ -108,25 +104,14 @@ db.set({}, null)
 
 ---
 
-#### 5. Pagination
+#### 5. Pagination and Sorting
 
 ```js
-var page = db.get({ type: 'log' }, {
-  limit: 10,
-  skip: 10
-})
+var page = db.get(
+  { type: 'log' },
+  { sort: { createdAt: -1 }, limit: 10, skip: 10 }
+)
 ```
-
----
-
-### Persistence Model
-
-* Data is stored **in memory**
-* Writes are **debounced** (5 ms) and snapshotted to disk
-* Persistence is **eventual**
-* On process exit before snapshot, recent writes may be lost
-
-There is no explicit flush or commit operation.
 
 ---
 
@@ -139,14 +124,25 @@ There is no explicit flush or commit operation.
 
 ---
 
+### Execution Model
+
+* All data lives in memory
+* No filesystem access
+* No async behavior
+* No background work
+* Process exit discards all data
+
+---
+
 ### Limitations
 
 * Single process only
-* No multi-process safety
-* No transactional guarantees
-* No live reload of external file changes
+* No persistence
+* No transactions
+* No indexes
+* Linear scan queries
 
-For multi-process, persistence or crash-durable use cases, use **`sysdb`** instead.
+Designed for embedded, ephemeral, test, cache, and control-plane use cases.
 
 ---
 

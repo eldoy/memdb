@@ -1,18 +1,11 @@
 var unitdb = require('../../index.js')
-var os = require('node:os')
-var path = require('node:path')
-var fsSync = require('node:fs')
-
-var tmpdir = os.tmpdir()
-var dbPath = path.join(tmpdir, 'unitdb.json')
 var db
 
 beforeEach(function () {
-  if (fsSync.existsSync(dbPath)) fsSync.unlinkSync(dbPath)
-  db = unitdb(dbPath)
+  db = unitdb()
 })
 
-test('get() basic and numeric operators', async function ({ t }) {
+test('get() basic and numeric operators', function ({ t }) {
   db.set({ name: 'a', val: 10 })
   db.set({ name: 'a', val: 20 })
 
@@ -21,7 +14,7 @@ test('get() basic and numeric operators', async function ({ t }) {
   t.equal(db.get({ val: { $lte: 10 } }).length, 1)
 })
 
-test('get() with multi-key sorting', async function ({ t }) {
+test('get() with multi-key sorting', function ({ t }) {
   db.set({ name: 'Charlie', age: 30 })
   db.set({ name: 'Alice', age: 25 })
   db.set({ name: 'Bob', age: 25 })
@@ -35,7 +28,7 @@ test('get() with multi-key sorting', async function ({ t }) {
   t.equal(resDesc[0].name, 'Charlie')
 })
 
-test('set() create, update, remove', async function ({ t }) {
+test('set() create, update, remove', function ({ t }) {
   var id = db.set({ type: 'job', name: 'a' })
   t.ok(id)
 
@@ -46,8 +39,12 @@ test('set() create, update, remove', async function ({ t }) {
   t.equal(db.get({ id: id }).length, 0)
 })
 
-test('pagination (limit and skip) with sort', async function ({ t }) {
-  for (var i = 1; i <= 5; i++) db.set({ n: i })
+test('pagination (limit and skip) with sort', function ({ t }) {
+  db.set({ n: 1 })
+  db.set({ n: 2 })
+  db.set({ n: 3 })
+  db.set({ n: 4 })
+  db.set({ n: 5 })
 
   var res = db.get({}, { sort: { n: -1 }, skip: 2, limit: 2 })
   t.equal(res.length, 2)
@@ -55,7 +52,7 @@ test('pagination (limit and skip) with sort', async function ({ t }) {
   t.equal(res[1].n, 2)
 })
 
-test('get() array and regex operators', async function ({ t }) {
+test('get() array and regex operators', function ({ t }) {
   db.set({ tag: 'a', name: 'Apple' })
   db.set({ tag: 'b', name: 'Banana' })
 
@@ -64,22 +61,24 @@ test('get() array and regex operators', async function ({ t }) {
   t.equal(db.get({ name: { $regex: /^Ap/ } }).length, 1)
 })
 
-test('date handling', async function ({ t }) {
+test('date handling', function ({ t }) {
   var myDate = new Date('2025-05-05')
   db.set({ id: 'dt', time: myDate })
 
   t.equal(db.get({ time: { $gt: new Date('2025-01-01') } }).length, 1)
 })
 
-test('missing keys and nulls', async function ({ t }) {
+test('missing keys and nulls', function ({ t }) {
   db.set({ name: 'a', meta: null })
+
   t.equal(db.get({ nonExistent: 'foo' }).length, 0)
   t.equal(db.get({ meta: null }).length, 1)
   t.equal(db.get({ meta: { $ne: 'something' } }).length, 1)
 })
 
-test('regex safety with numbers', async function ({ t }) {
+test('regex safety with numbers', function ({ t }) {
   db.set({ name: 123 })
+
   t.doesNotThrow(function () {
     var res = db.get({ name: { $regex: /abc/ } })
     t.equal(res.length, 0)
