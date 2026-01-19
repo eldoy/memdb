@@ -1,8 +1,8 @@
-## UnitDB
+## MemDB
 
 A lightweight, **in-memory JSON database** for Node.js designed for speed and simplicity. Intended for **single-process environments only**.
 
-`unitdb` keeps all data strictly in memory. There is **no persistence**.
+`memdb` keeps all data strictly in memory. There is **no persistence**.
 
 ---
 
@@ -21,7 +21,7 @@ A lightweight, **in-memory JSON database** for Node.js designed for speed and si
 ### Installation
 
 ```sh
-npm i unitdb
+npm i memdb
 ```
 
 ---
@@ -29,10 +29,10 @@ npm i unitdb
 ### Usage
 
 ```js
-var unitdb = require('unitdb')
+var memdb = require('memdb')
 
 // Single in-memory collection
-var db = unitdb()
+var db = memdb()
 
 db.set({ type: 'user', name: 'Alice' })
 db.set({ type: 'user', name: 'Bob' })

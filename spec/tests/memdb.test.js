@@ -1,8 +1,8 @@
-var unitdb = require('../../index.js')
+var memdb = require('../../index.js')
 var db
 
 beforeEach(function () {
-  db = unitdb()
+  db = memdb()
 })
 
 /* =========================
