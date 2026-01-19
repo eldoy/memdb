@@ -12,8 +12,18 @@ function unitdb() {
     return v
   }
 
+  function isUnsafeKey(k) {
+    return k === '__proto__' || k === 'constructor' || k === 'prototype'
+  }
+
+  function equals(a, b) {
+    return norm(a) === norm(b)
+  }
+
   function matches(doc, query) {
     for (var k in query) {
+      if (isUnsafeKey(k)) continue
+
       var condition = query[k]
       var value = doc[k]
 
@@ -29,7 +39,37 @@ function unitdb() {
           var target = condition[op]
 
           if (op === '$regex') {
-            if (typeof value !== 'string' || !target.test(value)) return false
+            var re = target
+
+            if (!(re instanceof RegExp)) {
+              if (typeof re !== 'string') return false
+              try {
+                re = new RegExp(re)
+              } catch {
+                return false
+              }
+            }
+
+            if (typeof value !== 'string' || !re.test(value)) return false
+            continue
+          }
+
+          if (op === '$in') {
+            var ok = false
+            for (var i = 0; i < target.length; i++) {
+              if (equals(value, target[i])) {
+                ok = true
+                break
+              }
+            }
+            if (!ok) return false
+            continue
+          }
+
+          if (op === '$nin') {
+            for (var i = 0; i < target.length; i++) {
+              if (equals(value, target[i])) return false
+            }
             continue
           }
 
@@ -40,11 +80,9 @@ function unitdb() {
           if (op === '$gte' && !(v >= t)) return false
           if (op === '$lte' && !(v <= t)) return false
           if (op === '$ne' && v === t) return false
-          if (op === '$in' && !target.includes(v)) return false
-          if (op === '$nin' && target.includes(v)) return false
         }
       } else {
-        if (value !== condition) return false
+        if (!equals(value, condition)) return false
       }
     }
     return true
@@ -57,7 +95,11 @@ function unitdb() {
       var sort = options && options.sort
       var results = []
 
-      if (!query || Object.keys(query).length === 0) {
+      if (
+        !query ||
+        typeof query !== 'object' ||
+        Object.keys(query).length === 0
+      ) {
         results = data.slice()
       } else {
         for (var i = 0; i < data.length; i++)
